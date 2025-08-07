@@ -170,43 +170,51 @@
 
 	function handleFile(file) {
 		const url = URL.createObjectURL(file)
-		playerElement.src = url
-		playerContainer.style.display = 'block'
-		dropZone.style.display = 'none'
-		fileButton.style.display = 'block'
-		player.play()
+		const fadeDuration = 200
 
-		let infoBlock = document.getElementById('video-info')
-		if (!infoBlock) {
-			infoBlock = document.createElement('div')
-			infoBlock.id = 'video-info'
-			infoBlock.style.display = 'none'
-			document.getElementById('player-container').appendChild(infoBlock)
+		playerContainer.style.transition = `opacity ${fadeDuration}ms ease`
+		playerContainer.style.opacity = '0'
 
-			const keys = ['title', 'resolution', 'size', 'bitrate', 'type']
-			for (const key of keys) {
-				infoBlock.innerHTML += `<p><strong>${key[0].toUpperCase() + key.slice(1)}:</strong> <span id="video-${key}"></span></p>`
-			}
-		}
+		setTimeout(() => {
+			playerElement.src = url
+			playerContainer.style.display = 'block'
+			dropZone.style.display = 'none'
+			fileButton.style.display = 'block'
 
-		playerElement.onloadedmetadata = () => {
-			const { duration, videoWidth: w, videoHeight: h } = playerElement
+			let infoBlock = document.getElementById('video-info')
+			if (!infoBlock) {
+				infoBlock = document.createElement('div')
+				infoBlock.id = 'video-info'
+				infoBlock.style.display = 'none'
+				document.getElementById('player-container').appendChild(infoBlock)
 
-			const fields = {
-				title: file.name,
-				type: file.type || 'unknown',
-				size: formatFileSize(file.size),
-				bitrate: duration && duration !== Infinity ? formatBitrate((file.size * 8) / duration) : 'Unknown',
-				resolution: `${w}×${h}`
+				const keys = ['title', 'resolution', 'size', 'bitrate', 'type']
+				for (const key of keys) {
+					infoBlock.innerHTML += `<p><strong>${key[0].toUpperCase() + key.slice(1)}:</strong> <span id="video-${key}"></span></p>`
+				}
 			}
 
-			for (const key in fields) {
-				const span = document.getElementById('video-' + key)
-				if (span) span.textContent = fields[key]
-			}
+			playerElement.onloadedmetadata = () => {
+				const { duration, videoWidth: w, videoHeight: h } = playerElement
 
-			infoBlock.style.display = 'block'
-		}
+				const fields = {
+					title: file.name,
+					type: file.type || 'unknown',
+					size: formatFileSize(file.size),
+					bitrate: duration && duration !== Infinity ? formatBitrate((file.size * 8) / duration) : 'Unknown',
+					resolution: `${w}×${h}`
+				}
+
+				for (const key in fields) {
+					const span = document.getElementById('video-' + key)
+					if (span) span.textContent = fields[key]
+				}
+
+				infoBlock.style.display = 'block'
+				playerContainer.style.opacity = '1'
+				player.play()
+			}
+		}, fadeDuration)
 	}
 
 	fileInput.addEventListener('change', e => {
