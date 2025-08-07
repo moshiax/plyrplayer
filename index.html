@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<title>plyrplayer</title>
+	<link rel="stylesheet" href="css.css" />
+	<link rel="icon" type="image/png" href="180x180.png" />
+	<style>
+		html, body {
+			margin: 0;
+			padding: 0;
+			font-family: sans-serif;
+			background-color: #0f0f0f;
+			color: #fff;
+			height: 100%;
+		}
+
+		#app {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			height: 100%;
+		}
+
+		#player-container {
+			width: 100%;
+			max-width: 960px;
+			display: none;
+		}
+
+		#video-wrapper {
+			aspect-ratio: 16 / 9;
+			background: black;
+		}
+
+		#drop-zone {
+			border: 2px dashed #333;
+			padding: 30px;
+			text-align: center;
+			background-color: #1a1a1a;
+			color: #ccc;
+			border-radius: 8px;
+			max-width: 400px;
+			cursor: pointer;
+		}
+
+		#drop-zone.hover {
+			border-color: #888;
+			background-color: #222;
+		}
+
+		#file-button {
+			position: fixed;
+			bottom: 20px;
+			right: 20px;
+			background-color: #272727;
+			color: #eee;
+			border: 1px solid #444;
+			padding: 10px 16px;
+			border-radius: 4px;
+			cursor: pointer;
+			display: none;
+		}
+
+		input[type="file"] {
+			display: none;
+		}
+
+		video {
+			width: 100%;
+			height: 100%;
+		}
+
+		#video-info {
+			margin-top: 12px;
+			width: 100%;
+			max-width: 960px;
+			color: #ccc;
+			font-size: 14px;
+		}
+
+		#video-info strong {
+			color: #fff;
+		}
+	</style>
+</head>
+<body>
+	<div id="app">
+		<div id="drop-zone">
+			<p>Drag and drop a video or select a file</p>
+			<input type="file" id="fileInput" accept="video/*" />
+		</div>
+
+		<div id="player-container">
+			<div id="video-wrapper">
+				<video id="player" playsinline controls></video>
+			</div>
+			<div id="video-info" style="display:none;">
+				<p><strong>Title:</strong> <span id="video-title"></span></p>
+				<p><strong>Type:</strong> <span id="video-type"></span></p>
+				<p><strong>Size:</strong> <span id="video-size"></span></p>
+			</div>
+		</div>
+	</div>
+
+	<button id="file-button">Choose another file</button>
+
+	<script src="plyr.js"></script>
+<script>
+	const dropZone = document.getElementById('drop-zone')
+	const fileInput = document.getElementById('fileInput')
+	const playerElement = document.getElementById('player')
+	const playerContainer = document.getElementById('player-container')
+	const fileButton = document.getElementById('file-button')
+	const videoInfo = document.getElementById('video-info')
+	const videoTitle = document.getElementById('video-title')
+	const videoType = document.getElementById('video-type')
+	const videoSize = document.getElementById('video-size')
+	const player = new Plyr('#player', {
+		enabled:               true,                  									 // Completely disable Plyr. Useful for conditional UA-based initialization.
+		debug:                 true,             							  		     // Display debugging information in the console.
+		controls: [
+			'play-large', 'play', 'progress', 'current-time',
+			'mute', 'volume', 'captions', 'settings',
+			'pip', 'airplay', 'fullscreen'
+		],                                           									 // Controls to include in the UI.
+		settings:              ['captions', 'quality', 'speed', 'loop'], 	  		     // Settings shown in settings menu.
+		i18n:                  {},                   									 // Used for internationalization (i18n) of the text within the UI. See defaults.js.
+//   	loadSprite:            false,                  									 // Load the SVG sprite if iconUrl is provided.
+//		iconUrl:               null,                   									 // URL or path to the SVG sprite.
+		iconPrefix:            'plyr',                 									 // Prefix used for icon IDs in the sprite.
+		blankVideo:            'https://cdn.plyr.io/static/blank.mp4', 					 // Blank video file to cancel requests properly.
+		autoplay:              false,                  									 // Autoplay the media on load.
+		autopause:             true,                 								     // Only one player playing at a time.
+		playsinline:           true,                  									 // Allow inline playback on iOS.
+		seekTime:              10,                     									 // Seconds to skip forward/back when seeking.
+		volume:                1,                                            		     // Initial volume (0 to 1).
+		muted:                 false,                                        	 	     // Start playback muted.
+		clickToPlay:           true,                                     		         // Clicking the container toggles play/pause.
+		disableContextMenu:    false,                                    		         // Disable right context menu on video
+		hideControls:          true,                                           		     // Auto-hide controls after inactivity or on fullscreen/playback.
+		resetOnEnd:            false,                                          		     // Reset to beginning when playback ends.
+		keyboard: {
+			focused:          true,               							     		 // Keyboard shortcuts only when player is focused.
+			global:           false               							     		 // Keyboard shortcuts are not global.
+		},
+		tooltips: {
+			controls:         false,           							         		 // Show tooltips on controls.
+			seek:             true                                               		 // Show tooltip on seek bar.
+		},
+		duration:              null,                						    		 // Custom duration override for media.
+		displayDuration:       true,                						   	     	 // Show duration on metadata load (requires preload != none).
+		invertTime:            true,               							   			 // Display time as countdown rather than elapsed time.
+		toggleInvert:          true,                						    		 // Allow user to toggle between countdown/elapsed.
+//broken listeners:             null,                  							 		 // Custom event listeners for controls.
+		captions: {
+			active:           false,                  							 		 // Whether captions are active by default.
+			language:         'auto',                 							 		 // Default caption language or 'auto' for browser language.
+			update:           false                  						    		 // Enable track list updates for dynamic sources.
+		},
+		fullscreen: {
+			enabled:          true,                   									 // Enable fullscreen support.
+			fallback:         true,                   									 // Fallback to pseudo-fullscreen if native not available.
+			iosNative:        false,                 									 // Use native iOS fullscreen (no custom UI). No effect on iPadOS.
+			container:        null                  								     // Specify fullscreen container (ancestor selector).
+		},
+		ratio:                 null,                								     // Force specific aspect ratio (e.g., '16:9').
+		storage: {
+			enabled:          true,                 						  		     // Enable saving player state in localStorage.
+			key:              'plyr'                  			   						 // Key name for storage.
+		},
+		speed: {
+			selected: 1,
+			options: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
+		},
+		quality: {
+			default:          1080,                    									 // Default quality if available in source.
+			options:          [4320, 2880, 2160, 1440, 1080, 720, 576, 480, 360, 240]    // Filter options for available qualities.
+		},
+		loop: {
+			active:           false                   									 // Loop playback when enabled.
+		},
+		ads: {
+			enabled:          false,                  // Enable ad support.
+			publisherId:      '',                     // vi.ai publisher ID.
+			tagUrl:           ''                      // Custom VAST tag URL (if not using Vi).
+		},
+		urls:                 {},                     // Override internal API URLs.
+		vimeo: {
+			byline:           false,
+			portrait:         false,
+			title:            false,
+			speed:            true,
+			transparent:      false                   // Vimeo embed config options.
+		},
+		youtube: {
+			noCookie:         false,                  // Use youtube-nocookie.com for GDPR compliance.
+			rel:              0,                      // Don’t show related videos.
+			showinfo:         0,                      // Deprecated by YouTube.
+			iv_load_policy:   3,                      // Hide annotations.
+			modestbranding:   1                       // Minimal YouTube branding.
+		},
+		previewThumbnails: {
+			enabled:          false,                  // Enable preview thumbnails.
+			src:              ''                      // URL or array of VTT files with thumbnail data.
+		},
+		mediaMetadata: {
+			title:            '',                     // Used for Media Session API.
+			artist:           '',
+			album:            '',
+			artwork:          []
+		},
+		markers: {
+			enabled:          false,                  // Enable markers in the timeline.
+			points:           []                      // Array of markers: { time, label }.
+		}
+	});
+
+	function formatFileSize(bytes) {
+		if (bytes < 1024) return bytes + ' B'
+		if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+		if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+		return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB'
+	}
+
+	function handleFile(file) {
+		const url = URL.createObjectURL(file)
+		playerElement.src = url
+		playerContainer.style.display = 'block'
+		dropZone.style.display = 'none'
+		fileButton.style.display = 'block'
+		player.play()
+
+		videoTitle.textContent = file.name
+		videoType.textContent = file.type || 'unknown'
+		videoSize.textContent = formatFileSize(file.size)
+		videoInfo.style.display = 'block'
+	}
+
+	fileInput.addEventListener('change', e => {
+		if (e.target.files[0]) handleFile(e.target.files[0])
+	})
+
+	;[dropZone, fileButton].forEach(el => el.addEventListener('click', () => fileInput.click()))
+
+	dropZone.addEventListener('dragover', e => {
+		e.preventDefault()
+		dropZone.classList.add('hover')
+	})
+
+	dropZone.addEventListener('dragleave', () => {
+		dropZone.classList.remove('hover')
+	})
+
+	dropZone.addEventListener('drop', e => {
+		e.preventDefault()
+		dropZone.classList.remove('hover')
+		if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0])
+	})
+
+	window.addEventListener('dragover', e => e.preventDefault())
+
+	window.addEventListener('drop', e => {
+		e.preventDefault()
+		for (const file of e.dataTransfer.files) {
+			if (file.type.startsWith('video/')) {
+				handleFile(file)
+				break
+			}
+		}
+	})
+
+	window.addEventListener('keydown', e => {
+		const tag = document.activeElement.tagName.toLowerCase()
+		const isEditable = document.activeElement.isContentEditable
+
+		if (tag === 'input' || tag === 'textarea' || isEditable) return
+
+		switch (e.key.toLowerCase()) {
+			case ' ':
+				e.preventDefault()
+				if (player.paused) player.play()
+				else player.pause()
+				break
+			case 'arrowright':
+				e.preventDefault()
+				player.currentTime = Math.min(player.currentTime + 5, player.duration)
+				break
+			case 'arrowleft':
+				e.preventDefault()
+				player.currentTime = Math.max(player.currentTime - 5, 0)
+				break
+			case 'arrowup':
+				e.preventDefault()
+				player.volume = Math.min(player.volume + 0.05, 1)
+				break
+			case 'arrowdown':
+				e.preventDefault()
+				player.volume = Math.max(player.volume - 0.05, 0)
+				break
+			case 'f':
+				e.preventDefault()
+				if (document.fullscreenElement) document.exitFullscreen()
+				else playerElement.requestFullscreen()
+				break
+		}
+	})
+
+</script>
+
+</body>
+</html>
