@@ -23,9 +23,12 @@
 		}
 
 		#player-container {
-			width: 100%;
-			max-width: 960px;
-			display: none;
+		  width: 900px;
+		  min-width: 20%;
+		  max-width: 70%;
+		  display: none;
+		  resize: horizontal;
+		  overflow: auto;
 		}
 
 		#video-wrapper {
@@ -112,6 +115,27 @@
 	const videoTitle = document.getElementById('video-title')
 	const videoType = document.getElementById('video-type')
 	const videoSize = document.getElementById('video-size')
+	const savedWidth = localStorage.getItem('playerContainerWidth');
+	if (savedWidth) {
+		playerContainer.style.width = savedWidth + 'px';
+	}
+
+	let resizeTimeout;
+
+	const observer = new MutationObserver(mutations => {
+		for (const mutation of mutations) {
+			if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+				clearTimeout(resizeTimeout);
+				resizeTimeout = setTimeout(() => {
+					const width = playerContainer.offsetWidth;
+					console.log(`[Resize] width changed to: ${width}px`);
+					localStorage.setItem('playerContainerWidth', width);
+				}, 200);
+			}
+		}
+	});
+
+	observer.observe(playerContainer, { attributes: true, attributeFilter: ['style'] });
 
 	function formatFileSize(bytes) {
 		if (bytes < 1024) return bytes + ' B'
