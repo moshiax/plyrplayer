@@ -96,11 +96,6 @@
 			<div id="video-wrapper">
 				<video id="player" playsinline controls></video>
 			</div>
-			<div id="video-info" style="display:none;">
-				<p><strong>Title:</strong> <span id="video-title"></span></p>
-				<p><strong>Type:</strong> <span id="video-type"></span></p>
-				<p><strong>Size:</strong> <span id="video-size"></span></p>
-			</div>
 		</div>
 	</div>
 
@@ -108,15 +103,6 @@
 
 	<script src="plyr.js"></script>
 <script>
-	const dropZone = document.getElementById('drop-zone')
-	const fileInput = document.getElementById('fileInput')
-	const playerElement = document.getElementById('player')
-	const playerContainer = document.getElementById('player-container')
-	const fileButton = document.getElementById('file-button')
-	const videoInfo = document.getElementById('video-info')
-	const videoTitle = document.getElementById('video-title')
-	const videoType = document.getElementById('video-type')
-	const videoSize = document.getElementById('video-size')
 	const player = new Plyr('#player', {
 		enabled:               true,                  									 // Completely disable Plyr. Useful for conditional UA-based initialization.
 		debug:                 true,             							  		     // Display debugging information in the console.
@@ -216,6 +202,17 @@
 			points:           []                      // Array of markers: { time, label }.
 		}
 	});
+</script>
+<script>
+	const dropZone = document.getElementById('drop-zone')
+	const fileInput = document.getElementById('fileInput')
+	const playerElement = document.getElementById('player')
+	const playerContainer = document.getElementById('player-container')
+	const fileButton = document.getElementById('file-button')
+	const videoInfo = document.getElementById('video-info')
+	const videoTitle = document.getElementById('video-title')
+	const videoType = document.getElementById('video-type')
+	const videoSize = document.getElementById('video-size')
 
 	function formatFileSize(bytes) {
 		if (bytes < 1024) return bytes + ' B'
@@ -232,10 +229,45 @@
 		fileButton.style.display = 'block'
 		player.play()
 
-		videoTitle.textContent = file.name
-		videoType.textContent = file.type || 'unknown'
-		videoSize.textContent = formatFileSize(file.size)
-		videoInfo.style.display = 'block'
+		const fields = {
+			title: '',
+			type: '',
+			size: '',
+			bitrate: '',
+			resolution: ''
+		}
+
+		let infoBlock = document.getElementById('video-info')
+		if (!infoBlock) {
+			infoBlock = document.createElement('div')
+			infoBlock.id = 'video-info'
+			infoBlock.style.display = 'none'
+
+			for (const key in fields) {
+				const p = document.createElement('p')
+				p.innerHTML = `<strong>${key[0].toUpperCase() + key.slice(1)}:</strong> <span id="video-${key}"></span>`
+				infoBlock.appendChild(p)
+			}
+
+			document.getElementById('player-container').appendChild(infoBlock)
+		}
+
+		playerElement.onloadedmetadata = () => {
+			const { duration, videoWidth: w, videoHeight: h } = playerElement
+
+			fields.title = file.name
+			fields.type = file.type || 'unknown'
+			fields.size = formatFileSize(file.size)
+			fields.bitrate = (file.size / duration / 125000).toFixed(2) + ' Mbps'
+			fields.resolution = `${w}×${h}`
+
+			for (const key in fields) {
+				const span = document.getElementById('video-' + key)
+				if (span) span.textContent = fields[key]
+			}
+
+			infoBlock.style.display = 'block'
+		}
 	}
 
 	fileInput.addEventListener('change', e => {
