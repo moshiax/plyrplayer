@@ -209,40 +209,41 @@
 	})
 
 	window.addEventListener('keydown', e => {
-		const tag = document.activeElement.tagName.toLowerCase()
-		const isEditable = document.activeElement.isContentEditable
+	  const tag = document.activeElement.tagName.toLowerCase();
+	  const isEditable = document.activeElement.isContentEditable;
 
-		if (tag === 'input' || tag === 'textarea' || isEditable) return
+	  if (tag === 'input' || tag === 'textarea' || isEditable) return;
 
-		switch (e.key.toLowerCase()) {
-			case ' ':
-				e.preventDefault()
-				if (player.paused) player.play()
-				else player.pause()
-				break
-			case 'arrowright':
-				e.preventDefault()
-				player.currentTime = Math.min(player.currentTime + 5, player.duration)
-				break
-			case 'arrowleft':
-				e.preventDefault()
-				player.currentTime = Math.max(player.currentTime - 5, 0)
-				break
-			case 'arrowup':
-				e.preventDefault()
-				player.volume = Math.min(player.volume + 0.05, 1)
-				break
-			case 'arrowdown':
-				e.preventDefault()
-				player.volume = Math.max(player.volume - 0.05, 0)
-				break
-			case 'f':
-				e.preventDefault()
-				if (document.fullscreenElement) document.exitFullscreen()
-				else playerElement.requestFullscreen()
-				break
-		}
-	})
+	  switch (e.code) {
+		case 'Space':
+		  e.preventDefault();
+		  if (player.paused) player.play();
+		  else player.pause();
+		  break;
+		case 'ArrowRight':
+		  e.preventDefault();
+		  player.currentTime = Math.min(player.currentTime + 5, player.duration);
+		  break;
+		case 'ArrowLeft':
+		  e.preventDefault();
+		  player.currentTime = Math.max(player.currentTime - 5, 0);
+		  break;
+		case 'ArrowUp':
+		  e.preventDefault();
+		  player.volume = Math.min(player.volume + 0.05, 1);
+		  break;
+		case 'ArrowDown':
+		  e.preventDefault();
+		  player.volume = Math.max(player.volume - 0.05, 0);
+		  break;
+		case 'KeyF':
+		  e.preventDefault();
+		  if (document.fullscreenElement) document.exitFullscreen();
+		  else playerElement.requestFullscreen();
+		  break;
+	  }
+	});
+
 
 </script>
 
