@@ -1,293 +1,248 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8" />
-	<title>plyrplayer</title>
-	<link rel="icon" type="image/png" href="180x180.png" />
-	<style>
-		html, body {
-			margin: 0;
-			padding: 0;
-			font-family: sans-serif;
-			background-color: #0f0f0f;
-			color: #fff;
-			height: 100%;
-		}
+<meta charset="UTF-8">
+<title>plyrplayer</title>
+<link rel="icon" type="image/png" href="180x180.png">
+<link rel="stylesheet" href="plyr/plyr.css">
+<style>
+html, body {
+	margin: 0;
+	padding: 0;
+	font-family: sans-serif;
+	background: #0f0f0f;
+	color: #fff;
+	height: 100%;
+}
+#app {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+}
+#player-container {
+	width: 980px;
+	min-width: 400px;
+	max-width: 85%;
+	display: none;
+	resize: horizontal;
+	overflow: hidden;
+	opacity: 0;
+	transition: opacity .2s ease;
+}
+#video-wrapper {
+	aspect-ratio: 16/9;
+	background: black;
+	user-select: none;
+}
+#drop-zone {
+	border: 2px dashed #333;
+	padding: 30px;
+	text-align: center;
+	background: #1a1a1a;
+	color: #ccc;
+	border-radius: 8px;
+	max-width: 400px;
+	cursor: pointer;
+}
+#drop-zone.hover {
+	border-color: #888;
+	background: #222;
+}
+#file-button {
+	position: fixed;
+	bottom: 20px;
+	right: 20px;
+	background: #272727;
+	color: #eee;
+	border: 1px solid #444;
+	padding: 10px 16px;
+	border-radius: 4px;
+	cursor: pointer;
+	display: none;
+}
+input[type="file"] { display: none; }
+video { width: 100%; height: 100%; }
+#video-info {
+	margin-top: 12px;
+	width: 100%;
+	max-width: 960px;
+	color: #ccc;
+	font-size: 14px;
+	display: none;
+}
+#video-info strong { color: #fff; }
+#video-info {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
-		#app {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			justify-content: center;
-			height: 100%;
-		}
+#video-info p {
+    display: inline-block;
+    white-space: nowrap;
+    margin-right: 12px;
+}
 
-		#player-container {
-		  width: 900px;
-		  min-width: 20%;
-		  max-width: 70%;
-		  display: none;
-		  resize: horizontal;
-		  overflow: auto;
-		}
-
-		#video-wrapper, 
-		#video-wrapper *, 
-		#player, 
-		#player * {
-			user-select: none;
-			-webkit-user-select: none;
-			-moz-user-select: none;
-			-ms-user-select: none;
-		}
-
-		#video-wrapper {
-			aspect-ratio: 16 / 9;
-			background: black;
-		}
-
-		#drop-zone {
-			border: 2px dashed #333;
-			padding: 30px;
-			text-align: center;
-			background-color: #1a1a1a;
-			color: #ccc;
-			border-radius: 8px;
-			max-width: 400px;
-			cursor: pointer;
-		}
-
-		#drop-zone.hover {
-			border-color: #888;
-			background-color: #222;
-		}
-
-		#file-button {
-			position: fixed;
-			bottom: 20px;
-			right: 20px;
-			background-color: #272727;
-			color: #eee;
-			border: 1px solid #444;
-			padding: 10px 16px;
-			border-radius: 4px;
-			cursor: pointer;
-			display: none;
-		}
-
-		input[type="file"] {
-			display: none;
-		}
-
-		video {
-			width: 100%;
-			height: 100%;
-		}
-
-		#video-info {
-			margin-top: 12px;
-			width: 100%;
-			max-width: 960px;
-			color: #ccc;
-			font-size: 14px;
-		}
-
-		#video-info strong {
-			color: #fff;
-		}
-	</style>
+</style>
 </head>
 <body>
-	<div id="app">
-		<div id="drop-zone">
-			<p>Drag and drop a video or select a file</p>
-			<input type="file" id="fileInput" accept="video/*" />
-		</div>
-
-		<div id="player-container">
-			<div id="video-wrapper">
-				<video id="player" playsinline controls></video>
-			</div>
-		</div>
+<div id="app">
+	<div id="drop-zone">
+		<p>Drag and drop a video or select a file</p>
+		<input type="file" id="fileInput" accept="video/*">
 	</div>
+	<div id="player-container">
+		<div id="video-wrapper">
+			<video id="player" playsinline controls></video>
+		</div>
+		<div id="video-info"></div>
+	</div>
+</div>
+<button id="file-button">Choose another file</button>
 
-	<button id="file-button">Choose another file</button>
-    <link rel="stylesheet" href="plyr/plyr.css" />
-	<script src="plyr/plyr.js"></script>
-	<script src="plyr/playerconfig.js"></script>
+<script src="plyr/plyr.js"></script>
+<script src="plyr/playerconfig.js"></script>
 <script>
-	const dropZone = document.getElementById('drop-zone')
-	const fileInput = document.getElementById('fileInput')
-	const playerElement = document.getElementById('player')
-	const playerContainer = document.getElementById('player-container')
-	const fileButton = document.getElementById('file-button')
-	const videoInfo = document.getElementById('video-info')
-	const videoTitle = document.getElementById('video-title')
-	const videoType = document.getElementById('video-type')
-	const videoSize = document.getElementById('video-size')
-	const savedWidth = localStorage.getItem('playerContainerWidth');
-	if (savedWidth) {
-		playerContainer.style.width = savedWidth + 'px';
-	}
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('fileInput');
+const playerElement = document.getElementById('player');
+const playerContainer = document.getElementById('player-container');
+const fileButton = document.getElementById('file-button');
+const videoInfo = document.getElementById('video-info');
+let currentURL = null;
+let resizeTimeout;
 
-	let resizeTimeout;
+if (localStorage.getItem('playerContainerWidth')) {
+	playerContainer.style.width = localStorage.getItem('playerContainerWidth') + 'px';
+}
 
-	const observer = new MutationObserver(mutations => {
-		for (const mutation of mutations) {
-			if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-				clearTimeout(resizeTimeout);
-				resizeTimeout = setTimeout(() => {
-					const width = playerContainer.offsetWidth;
-					console.log(`[Resize] width changed to: ${width}px`);
-					localStorage.setItem('playerContainerWidth', width);
-				}, 200);
-			}
+const observer = new MutationObserver(mutations => {
+	for (const mutation of mutations) {
+		if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+			clearTimeout(resizeTimeout);
+			resizeTimeout = setTimeout(() => {
+				const width = playerContainer.offsetWidth;
+				localStorage.setItem('playerContainerWidth', width);
+			}, 200);
 		}
-	});
-
-	observer.observe(playerContainer, { attributes: true, attributeFilter: ['style'] });
-
-	function formatFileSize(bytes) {
-		if (bytes < 1024) return bytes + ' B'
-		if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-		if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-		return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB'
 	}
+});
 
-	function formatBitrate(bps) {
-		if (bps >= 1_000_000) {
-			return bps / 1_000_000 % 1 === 0
-				? (bps / 1_000_000).toFixed(0) + ' Mbps'
-				: (bps / 1_000_000).toFixed(2) + ' Mbps'
-		}
-		if (bps >= 1_000) {
-			return bps / 1_000 % 1 === 0
-				? (bps / 1_000).toFixed(0) + ' kbps'
-				: (bps / 1_000).toFixed(2) + ' kbps'
-		}
-		return bps.toFixed(0) + ' bps'
+observer.observe(playerContainer, { attributes: true, attributeFilter: ['style'] });
+
+function formatFileSize(bytes) {
+	if (bytes < 1024) return bytes + ' B';
+	if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+	if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+	return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+}
+
+function formatBitrate(bps) {
+	if (bps >= 1_000_000) {
+		return bps / 1_000_000 % 1 === 0
+			? (bps / 1_000_000).toFixed(0) + ' Mbps'
+			: (bps / 1_000_000).toFixed(2) + ' Mbps';
 	}
-
-	function handleFile(file) {
-		const url = URL.createObjectURL(file)
-		const fadeDuration = 200
-
-		playerContainer.style.transition = `opacity ${fadeDuration}ms ease`
-		playerContainer.style.opacity = '0'
-
-		setTimeout(() => {
-			playerElement.src = url
-			playerContainer.style.display = 'block'
-			dropZone.style.display = 'none'
-			fileButton.style.display = 'block'
-
-			let infoBlock = document.getElementById('video-info')
-			if (!infoBlock) {
-				infoBlock = document.createElement('div')
-				infoBlock.id = 'video-info'
-				infoBlock.style.display = 'none'
-				document.getElementById('player-container').appendChild(infoBlock)
-
-				const keys = ['title', 'resolution', 'size', 'bitrate', 'type']
-				for (const key of keys) {
-					infoBlock.innerHTML += `<p><strong>${key[0].toUpperCase() + key.slice(1)}:</strong> <span id="video-${key}"></span></p>`
-				}
-			}
-
-			playerElement.onloadedmetadata = () => {
-				const { duration, videoWidth: w, videoHeight: h } = playerElement
-
-				const fields = {
-					title: file.name,
-					type: file.type || 'unknown',
-					size: formatFileSize(file.size),
-					bitrate: duration && duration !== Infinity ? formatBitrate((file.size * 8) / duration) : 'Unknown',
-					resolution: `${w}×${h}`
-				}
-
-				for (const key in fields) {
-					const span = document.getElementById('video-' + key)
-					if (span) span.textContent = fields[key]
-				}
-
-				infoBlock.style.display = 'block'
-				playerContainer.style.opacity = '1'
-				player.play()
-			}
-		}, fadeDuration)
+	if (bps >= 1_000) {
+		return bps / 1_000 % 1 === 0
+			? (bps / 1_000).toFixed(0) + ' kbps'
+			: (bps / 1_000).toFixed(2) + ' kbps';
 	}
+	return bps.toFixed(0) + ' bps';
+}
 
-	fileInput.addEventListener('change', e => {
-		if (e.target.files[0]) handleFile(e.target.files[0])
-	})
+function handleFile(file) {
+    if (currentURL) URL.revokeObjectURL(currentURL);
+    currentURL = URL.createObjectURL(file);
 
-	;[dropZone, fileButton].forEach(el => el.addEventListener('click', () => fileInput.click()))
+    playerContainer.style.opacity = '0';
 
-	dropZone.addEventListener('dragover', e => {
-		e.preventDefault()
-		dropZone.classList.add('hover')
-	})
+    setTimeout(() => {
+        playerElement.src = currentURL;
+        playerElement.load();
+        playerContainer.style.display = 'block';
+        dropZone.style.display = 'none';
+        fileButton.style.display = 'block';
 
-	dropZone.addEventListener('dragleave', () => {
-		dropZone.classList.remove('hover')
-	})
+        playerElement.onloadedmetadata = () => {
+            if (!videoInfo.innerHTML.trim()) {
+                ['title', 'resolution', 'size', 'bitrate', 'type'].forEach(k => {
+                    videoInfo.innerHTML += `<p><strong>${k[0].toUpperCase() + k.slice(1)}:</strong> <span id="video-${k}"></span></p>`;
+                });
+            }
 
-	dropZone.addEventListener('drop', e => {
-		e.preventDefault()
-		dropZone.classList.remove('hover')
-		if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0])
-	})
+            const { duration, videoWidth: w, videoHeight: h } = playerElement;
+            const fields = {
+                title: file.name,
+                type: file.type || 'unknown',
+                size: formatFileSize(file.size),
+                bitrate: duration && duration !== Infinity ? formatBitrate((file.size * 8) / duration) : 'Unknown',
+                resolution: `${w}×${h}`
+            };
 
-	window.addEventListener('dragover', e => e.preventDefault())
+            Object.entries(fields).forEach(([k, v]) => {
+                const span = document.getElementById(`video-${k}`);
+                if (span) span.textContent = v;
+            });
 
-	window.addEventListener('drop', e => {
-		e.preventDefault()
-		for (const file of e.dataTransfer.files) {
-			if (file.type.startsWith('video/')) {
-				handleFile(file)
-				break
-			}
-		}
-	})
+            videoInfo.style.display = 'block';
+            playerContainer.style.opacity = '1';
+            playerElement.play().catch(() => {});
+        };
+    }, 200);
+}
 
-	window.addEventListener('keydown', e => {
-	  const tag = document.activeElement.tagName.toLowerCase();
-	  const isEditable = document.activeElement.isContentEditable;
+let hoverTimeout;
 
-	  if (tag === 'input' || tag === 'textarea' || isEditable) return;
+dropZone.addEventListener('dragover', e => {
+	e.preventDefault();
+	clearTimeout(hoverTimeout);
+	if (!dropZone.classList.contains('hover')) {
+		dropZone.classList.add('hover');
+	}
+});
 
-	  switch (e.code) {
+dropZone.addEventListener('dragleave', () => {
+	clearTimeout(hoverTimeout);
+	hoverTimeout = setTimeout(() => {
+		dropZone.classList.remove('hover');
+	}, 10);
+});
+
+window.addEventListener('dragover', e => e.preventDefault());
+
+window.addEventListener('drop', e => {
+	e.preventDefault();
+	const file = [...e.dataTransfer.files].find(f => f.type.startsWith('video/'));
+	if (file) handleFile(file);
+});
+
+window.addEventListener('keydown', e => {
+	if (['input','textarea'].includes(document.activeElement.tagName.toLowerCase()) || document.activeElement.isContentEditable) return;
+	switch (e.code) {
 		case 'Space':
-		  e.preventDefault();
-		  if (player.paused) player.play();
-		  else player.pause();
-		  break;
+			e.preventDefault();
+			playerElement.paused ? playerElement.play() : playerElement.pause();
+			break;
 		case 'ArrowRight':
-		  e.preventDefault();
-		  player.currentTime = Math.min(player.currentTime + 5, player.duration);
-		  break;
+			playerElement.currentTime = Math.min(playerElement.currentTime + 5, playerElement.duration);
+			break;
 		case 'ArrowLeft':
-		  e.preventDefault();
-		  player.currentTime = Math.max(player.currentTime - 5, 0);
-		  break;
+			playerElement.currentTime = Math.max(playerElement.currentTime - 5, 0);
+			break;
 		case 'ArrowUp':
-		  e.preventDefault();
-		  player.volume = Math.min(player.volume + 0.05, 1);
-		  break;
+			playerElement.volume = Math.min(playerElement.volume + 0.05, 1);
+			break;
 		case 'ArrowDown':
-		  e.preventDefault();
-		  player.volume = Math.max(player.volume - 0.05, 0);
-		  break;
+			playerElement.volume = Math.max(playerElement.volume - 0.05, 0);
+			break;
 		case 'KeyF':
-		  e.preventDefault();
-		  if (document.fullscreenElement) document.exitFullscreen();
-		  else playerElement.requestFullscreen();
-		  break;
-	  }
-	});
-
+			document.fullscreenElement ? document.exitFullscreen() : playerElement.requestFullscreen();
+			break;
+	}
+});
 
 </script>
-
 </body>
 </html>
