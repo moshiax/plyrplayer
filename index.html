@@ -195,19 +195,24 @@ function handleFile(file) {
 
 let hoverTimeout;
 
-dropZone.addEventListener('dragover', e => {
-	e.preventDefault();
+function addhighlight() {
 	clearTimeout(hoverTimeout);
-	if (!dropZone.classList.contains('hover')) {
-		dropZone.classList.add('hover');
-	}
-});
+	dropZone.classList.add('hover');
+}
 
-dropZone.addEventListener('dragleave', () => {
+function removehighlight() {
 	clearTimeout(hoverTimeout);
-	hoverTimeout = setTimeout(() => {
-		dropZone.classList.remove('hover');
-	}, 10);
+	hoverTimeout = setTimeout(() => dropZone.classList.remove('hover'), 10);
+}
+
+['dragover', 'mouseenter'].forEach(e => dropZone.addEventListener(e, addhighlight));
+['dragleave', 'mouseleave'].forEach(e => dropZone.addEventListener(e, removehighlight));
+
+
+dropZone.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', e => {
+	if (e.target.files[0]) handleFile(e.target.files[0]);
 });
 
 window.addEventListener('dragover', e => e.preventDefault());
