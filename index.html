@@ -90,7 +90,7 @@ video { width: 100%; height: 100%; }
 <div id="app">
 	<div id="drop-zone">
 		<p>Drag and drop a video or select a file</p>
-		<input type="file" id="fileInput" accept="video/*">
+		<input type="file" id="fileInput" accept="video/*,audio/*">
 	</div>
 	<div id="player-container">
 		<div id="video-wrapper">
@@ -139,58 +139,60 @@ function formatFileSize(bytes) {
 }
 
 function formatBitrate(bps) {
-	if (bps >= 1_000_000) {
-		return bps / 1_000_000 % 1 === 0
-			? (bps / 1_000_000).toFixed(0) + ' Mbps'
-			: (bps / 1_000_000).toFixed(2) + ' Mbps';
-	}
-	if (bps >= 1_000) {
-		return bps / 1_000 % 1 === 0
-			? (bps / 1_000).toFixed(0) + ' kbps'
-			: (bps / 1_000).toFixed(2) + ' kbps';
-	}
-	return bps.toFixed(0) + ' bps';
+    const kbps = bps / 1000;
+    return kbps % 1 === 0 ? kbps.toFixed(0) + ' kbps' : kbps.toFixed(2) + ' kbps';
+}
+
+function formatDuration(seconds) {
+    if (!seconds || seconds === Infinity) return 'Unknown';
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return [h, m, s]
+        .map(v => String(v).padStart(2, '0'))
+        .join(':');
 }
 
 function handleFile(file) {
     if (currentURL) URL.revokeObjectURL(currentURL);
     currentURL = URL.createObjectURL(file);
 
+    playerElement.src = currentURL;
+    playerElement.load();
+
     playerContainer.style.opacity = '0';
+    playerContainer.style.display = 'block';
+    dropZone.style.display = 'none';
+    fileButton.style.display = 'block';
 
-    setTimeout(() => {
-        playerElement.src = currentURL;
-        playerElement.load();
-        playerContainer.style.display = 'block';
-        dropZone.style.display = 'none';
-        fileButton.style.display = 'block';
-
-        playerElement.onloadedmetadata = () => {
-            if (!videoInfo.innerHTML.trim()) {
-                ['title', 'resolution', 'size', 'bitrate', 'type'].forEach(k => {
-                    videoInfo.innerHTML += `<p><strong>${k[0].toUpperCase() + k.slice(1)}:</strong> <span id="video-${k}"></span></p>`;
-                });
-            }
-
-            const { duration, videoWidth: w, videoHeight: h } = playerElement;
-            const fields = {
-                title: file.name,
-                type: file.type || 'unknown',
-                size: formatFileSize(file.size),
-                bitrate: duration && duration !== Infinity ? formatBitrate((file.size * 8) / duration) : 'Unknown',
-                resolution: `${w}×${h}`
-            };
-
-            Object.entries(fields).forEach(([k, v]) => {
-                const span = document.getElementById(`video-${k}`);
-                if (span) span.textContent = v;
+    playerElement.onloadedmetadata = () => {
+        if (!videoInfo.innerHTML.trim()) {
+            ['title', 'resolution', 'duration', 'size', 'bitrate', 'type'].forEach(k => {
+                videoInfo.innerHTML += `<p><strong>${k[0].toUpperCase() + k.slice(1)}:</strong> <span id="video-${k}"></span></p>`;
             });
+        }
 
-            videoInfo.style.display = 'block';
-            playerContainer.style.opacity = '1';
-            playerElement.play().catch(() => {});
+        const isAudio = file.type.startsWith('audio/');
+        const { duration, videoWidth: w = 0, videoHeight: h = 0 } = playerElement;
+
+        const fields = {
+            title: file.name,
+            resolution: isAudio ? 'N/A' : `${w}×${h}`,
+            duration: formatDuration(duration),
+            size: formatFileSize(file.size),
+            bitrate: duration && duration !== Infinity ? formatBitrate((file.size * 8) / duration) : 'Unknown',
+            type: file.type || 'unknown'
         };
-    }, 200);
+
+        Object.entries(fields).forEach(([k, v]) => {
+            const span = document.getElementById(`video-${k}`);
+            if (span) span.textContent = v;
+        });
+
+        videoInfo.style.display = 'block';
+        playerContainer.style.opacity = '1';
+        playerElement.play().catch(() => {});
+    };
 }
 
 let hoverTimeout;
@@ -220,7 +222,7 @@ window.addEventListener('dragover', e => e.preventDefault());
 
 window.addEventListener('drop', e => {
 	e.preventDefault();
-	const file = [...e.dataTransfer.files].find(f => f.type.startsWith('video/'));
+	const file = [...e.dataTransfer.files].find(f => f.type.startsWith('video/') || f.type.startsWith('audio/'));
 	if (file) handleFile(file);
 });
 
